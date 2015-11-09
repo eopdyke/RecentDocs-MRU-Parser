@@ -25,10 +25,14 @@ def reg_mru_framework(key):
     xref_lwt_ext = {}
     files_and_times=[]
     special = ['Map Network Drive MRU']
+    #Check the ntuser.dat for the presence of the RecentDocs key.
+    print '\n[+] Checking for RecentDocs key'
     try:
         subkeys = get_recentdoc_subkeys(key)
+        print '\n[+] Key found!'
     except:
-        help_cmd()
+        print '\n[-] \Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs was not found!'
+        sys.exit()
     try:
         try:
             given_key = _winreg.OpenKey(_winreg.HKEY_USERS, key)
