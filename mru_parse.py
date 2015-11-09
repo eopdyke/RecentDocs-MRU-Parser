@@ -32,6 +32,7 @@ def reg_mru_framework(key):
         print '\n[+] Key found!'
     except:
         print '\n[-] \Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs was not found!'
+        unload()
         sys.exit()
     try:
         try:
