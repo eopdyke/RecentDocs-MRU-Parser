@@ -202,9 +202,7 @@ def write_to_file(final_list):
     try:
         location = os.getcwd()
         with open(location+r'\recent_docs.csv', 'a') as f:
-            f.write('MRU_PARSE OUTPUT\n')
-            f.write('All Times are in UTC format\n\n\n')
-            f.write('Artifact,Time\n')
+            f.write('ARTIFACT,TIMESTAMP\n')
             for entry in final_list:
                 f.write(entry+'\n')
             f.close()
