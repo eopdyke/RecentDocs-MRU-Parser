@@ -1,19 +1,26 @@
+## Written by: Eric Opdyke
+## Version: 1.2
+## July 2016
+
+
 import _winreg
 import sys
 import subprocess
 from datetime import datetime
+import os
 
 
 
 def help_cmd():
-    unload()
-    sys.exit('\n[X] Must be run from an Administrative cmd prompt\n[+] usage: mru_parse.py path_to_NTUSER.dat_file [path to output file]')
+    print '\n[-] Must be run from an Administrative cmd prompt\n[-] usage: mru_parse.py path_to_NTUSER.dat_file'
+    sys.exit()
     
 def load():
     try:
-        print '\n[+] Loading '+sys.argv[1]+ ' into the HKU hive as MRU_PARSE!'
+        print '\n[*] Loading '+sys.argv[1]+ ' into the HKU hive as MRU_PARSE!'
         if ' ' in sys.argv[1]:
             subprocess.call("reg LOAD HKU\MRU_PARSE "+'"'+sys.argv[1]+'"')
+            print "reg LOAD HKU\MRU_PARSE "+'"'+sys.argv[1]+'"'
         else:
             subprocess.call("reg LOAD HKU\MRU_PARSE "+sys.argv[1])
     except IndexError:
@@ -25,15 +32,10 @@ def reg_mru_framework(key):
     xref_lwt_ext = {}
     files_and_times=[]
     special = ['Map Network Drive MRU']
-    #Check the ntuser.dat for the presence of the RecentDocs key.
-    print '\n[+] Checking for RecentDocs key'
     try:
         subkeys = get_recentdoc_subkeys(key)
-        print '\n[+] Key found!'
     except:
-        print '\n[-] \Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs was not found!'
-        unload()
-        sys.exit()
+        help_cmd()
     try:
         try:
             given_key = _winreg.OpenKey(_winreg.HKEY_USERS, key)
@@ -86,7 +88,6 @@ def get_recentdoc_subkeys(key):
             subkey = _winreg.EnumKey(key, i)
             sub_key_list.append(subkey)
     except WindowsError:
-        print'here'
         pass
     return sub_key_list
 
@@ -168,19 +169,6 @@ def parse_subkeys(key, value):
     return last_mod, mru_file
 
 
-
-def sort_final_list(menu_list):
-    counter = 1
-    menu = []
-    for i in menu_list:
-    	menu_item = '[%d] %s' % (counter, i)
-    	check_format = len(menu_item)
-    	menu.append(menu_item)
-    	counter +=1
-    return menu
-
-
-
 def sort(mru_list, mru_timestamps):
 
     new_mru_list = []
@@ -204,25 +192,21 @@ def sort(mru_list, mru_timestamps):
         for k,v in file_time.iteritems():
             if k in new_mru_list:
                 index = new_mru_list.index(k)
-                length_k = len(k)
-                length_v = len(v)
-                if length_k + length_v <= length:
-                    current_length = length_k + length_v
-                    num_space = length - current_length-3
-                    space = ' '*num_space
-                    new_mru_list[index] = k+space+v
-                else:
-                    new_mru_list[index] = k+'      '+v
-    return '\n'.join(sort_final_list(new_mru_list))
+                new_mru_list[index] = k+','+v
+
+    return new_mru_list
 
 
 
-def write_to_file(location, final_list):
+def write_to_file(final_list):
     try:
-        with open(location, 'a') as f:
+        location = os.getcwd()
+        with open(location+r'\recent_docs.csv', 'a') as f:
             f.write('MRU_PARSE OUTPUT\n')
             f.write('All Times are in UTC format\n\n\n')
-            f.write(final_list)
+            f.write('Artifact,Time\n')
+            for entry in final_list:
+                f.write(entry+'\n')
             f.close()
     except IOError:
         unload()
@@ -231,7 +215,7 @@ def write_to_file(location, final_list):
 
 
 def unload():
-    print '\n[+] Unloading the '+sys.argv[1]+' from the registry!'
+    print '\n[*] Unloading the '+sys.argv[1]+' from the registry!'
     subprocess.call("reg UNLOAD HKU\MRU_PARSE")
     return
     
@@ -239,23 +223,21 @@ def unload():
 if __name__ == '__main__':
     try:
         help_cmds = ['-help', '-h', 'help', '?']
-        if sys.argv[1] in help_cmds:
+        if sys.argv[-1] in help_cmds:
             help_cmd()
         else:
             load()
             key = r'MRU_PARSE\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs'
             mru_list, mru_timestamps = reg_mru_framework(key)
             final_list = sort(mru_list, mru_timestamps)
-            try:
-                if len(sys.argv[2]) != 0:
-                    write_to_file(sys.argv[2], final_list)
-                    print '\n[+] Complete...written to '+sys.argv[2]
-            except IndexError:
-                print '\n'+final_list
+            
+            write_to_file(final_list)
+            location = os.getcwd()
+            print '\n[*] Complete...written to '+location+r' \recent_docs.csv'
             unload()
             
-    except KeyboardInterrupt:
-        sys.exit('[x] Shuttng Down!')
+    except:
+        sys.exit('\nPlease supply the path to the NTUSER.dat file!')
 
 
 
